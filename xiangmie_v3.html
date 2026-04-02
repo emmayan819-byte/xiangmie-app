@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>箱咩養成協定 v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #050508;
+  --surface:   #0c0c14;
+  --surface2:  #13131f;
+  --surface3:  #1a1a28;
+  --border:    rgba(120,100,255,0.12);
+  --border-hi: rgba(120,100,255,0.3);
+  --c-violet:  #7c6fff;
+  --c-cyan:    #00e5cc;
+  --c-green:   #39ff8f;
+  --c-red:     #ff3a5c;
+  --c-amber:   #ffb830;
+  --c-pink:    #ff6eb4;
+  --text:      #c8cce0;
+  --text-dim:  #6b708a;
+  --nav-h:     66px;
+  --mono:      'Space Mono', monospace;
+  --display:   'Syne', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  font-family: var(--mono);
+  background: var(--bg);
+  color: var(--text);
+  height: 100dvh;
+  width: 100vw;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* scanlines */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 4px);
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── HEADER ── */
+header {
+  flex-shrink: 0;
+  height: 58px;
+  background: var(--surface);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--border-hi);
+  position: relative;
+  z-index: 50;
+}
+.h-glow {
+  position: absolute;
+  bottom: -1px; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--c-violet) 30%, var(--c-cyan) 70%, transparent 100%);
+  opacity: 0.7;
+}
+.hud-stat { display: flex; flex-direction: column; gap: 2px; }
+.hud-stat.right { align-items: flex-end; }
+.hud-val {
+  font-family: var(--display);
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.hud-lbl { font-size: 0.5rem; color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase; }
+.v-violet { color: var(--c-violet); }
+.v-amber  { color: var(--c-amber);  }
+.v-cyan   { color: var(--c-cyan);   }
+.v-green  { color: var(--c-green);  }
+.v-pink   { color: var(--c-pink);   }
+
+.header-mid {
+  font-family: var(--display);
+  font-size: 0.55rem;
+  color: var(--text-dim);
+  letter-spacing: 0.2em;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* exp bar */
+.exp-bar-wrap {
+  position: absolute;
+  bottom: -4px; left: 0; right: 0;
+  height: 3px;
+  background: rgba(124,111,255,0.1);
+  overflow: hidden;
+}
+.exp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--c-violet), var(--c-cyan));
+  transition: width 1s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── MAIN ── */
+main {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  padding-bottom: var(--nav-h);
+  scroll-behavior: smooth;
+}
+main::-webkit-scrollbar { width: 2px; }
+main::-webkit-scrollbar-thumb { background: var(--c-violet); border-radius: 2px; }
+
+.view { display: none; flex-direction: column; min-height: 100%; padding: 20px 16px; }
+.view.active { display: flex; }
+
+/* ── HOME ── */
+#view-home {
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding-top: 16px;
+}
+
+.avatar-stage {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* orbital rings */
+.orbit {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid var(--border-hi);
+}
+.orbit-1 { inset: 0;   animation: spin 10s linear infinite; }
+.orbit-2 { inset: -16px; border-style: dashed; border-color: rgba(0,229,204,0.15); animation: spin 18s linear infinite reverse; }
+.orbit-dot {
+  position: absolute;
+  width: 5px; height: 5px;
+  background: var(--c-violet);
+  border-radius: 50%;
+  top: -2px; left: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 0 8px var(--c-violet);
+}
+.orbit-dot-2 {
+  background: var(--c-cyan);
+  box-shadow: 0 0 8px var(--c-cyan);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.avatar-core {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  background: var(--surface2);
+  border: 1px solid var(--border-hi);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+.avatar-body { font-size: 4.5rem; line-height: 1; }
+.equip-layer { position: absolute; display: none; line-height: 1; }
+#equip-visor  { top: -12px; font-size: 3rem; z-index: 5; }
+#equip-shoes  { bottom: -16px; font-size: 2.8rem; z-index: 4; }
+#equip-aura   { font-size: 8rem; z-index: 1; opacity: 0.35; animation: aura 3s ease-in-out infinite; }
+@keyframes aura { 0%,100% { opacity: 0.25; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.06); } }
+
+.avatar-bounce { animation: bounce .2s ease-out; }
+@keyframes bounce { 0% { transform: translateY(0); } 45% { transform: translateY(-14px); } 100% { transform: translateY(0); } }
+
+.status-tag {
+  margin-top: 18px;
+  font-family: var(--display);
+  font-size: 0.6rem;
+  letter-spacing: 0.25em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+.status-tag b { color: var(--c-violet); font-weight: 700; }
+
+/* home grid */
+.home-grid {
+  margin-top: 20px;
+  width: 100%;
+  max-width: 340px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.g-tile {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 12px;
+  position: relative;
+  overflow: hidden;
+}
+.g-tile::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 2px;
+  background: var(--accent, var(--c-violet));
+  opacity: 0.6;
+}
+.tile-val {
+  font-family: var(--display);
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.tile-lbl { font-size: 0.55rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; }
+
+/* ── SECTION TITLE ── */
+.section-title {
+  font-family: var(--display);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: var(--c-violet);
+  text-transform: uppercase;
+  padding-bottom: 12px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title::before { content: '//'; opacity: 0.4; font-weight: 400; }
+
+/* ── CARD ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+}
+.card-top-glow {
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--c-violet) 40%, var(--c-cyan) 60%, transparent);
+  opacity: 0.35;
+}
+
+/* ── INPUTS ── */
+.field { margin-bottom: 14px; }
+.field label {
+  display: block;
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+.field input[type="number"] {
+  width: 100%;
+  background: rgba(124,111,255,0.05);
+  border: 1px solid var(--border-hi);
+  color: var(--c-cyan);
+  padding: 13px 16px;
+  border-radius: 7px;
+  font-size: 1.5rem;
+  font-family: var(--display);
+  font-weight: 800;
+  text-align: center;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+  -moz-appearance: textfield;
+}
+.field input[type="number"]::-webkit-inner-spin-button,
+.field input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+.field input[type="number"]:focus {
+  border-color: var(--c-violet);
+  box-shadow: 0 0 0 3px rgba(124,111,255,0.15);
+}
+
+/* ── BUTTONS ── */
+.btn {
+  width: 100%;
+  padding: 14px 20px;
+  border-radius: 7px;
+  font-family: var(--display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+  transition: all .15s ease;
+  position: relative;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.btn:active { transform: scale(0.98); }
+
+.btn-violet {
+  background: transparent;
+  color: var(--c-violet);
+  border: 1.5px solid var(--c-violet);
+}
+.btn-violet:active { background: rgba(124,111,255,0.15); }
+
+.btn-cyan {
+  background: transparent;
+  color: var(--c-cyan);
+  border: 1.5px solid var(--c-cyan);
+}
+.btn-cyan:active { background: rgba(0,229,204,0.1); }
+
+.btn-danger {
+  background: transparent;
+  color: var(--c-red);
+  border: 1.5px solid var(--c-red);
+}
+.btn-danger:active { background: rgba(255,58,92,0.12); }
+
+.btn-mock {
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid rgba(107,112,138,0.3);
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+}
+
+.btn-active {
+  background: var(--c-violet) !important;
+  color: #fff !important;
+  border-color: var(--c-violet) !important;
+}
+
+/* ── FASTING ── */
+.fast-display { text-align: center; padding: 16px 0 20px; }
+.fast-timer-big {
+  font-family: var(--display);
+  font-size: 3.2rem;
+  font-weight: 800;
+  color: var(--c-violet);
+  letter-spacing: 0.03em;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.fast-sub { font-size: 0.6rem; color: var(--text-dim); letter-spacing: 0.15em; margin-bottom: 14px; }
+.fast-bar-wrap {
+  height: 4px;
+  background: var(--surface3);
+  border-radius: 2px;
+  margin: 14px 0 10px;
+  overflow: hidden;
+}
+.fast-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--c-violet), var(--c-cyan));
+  border-radius: 2px;
+  transition: width 1s linear;
+}
+.fast-hint { font-size: 0.68rem; color: var(--text-dim); line-height: 1.6; }
+
+/* milestones */
+.milestone-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+.milestone-row:last-child { border-bottom: none; }
+.ms-left { display: flex; align-items: center; gap: 12px; }
+.ms-bar { width: 3px; height: 34px; border-radius: 2px; background: var(--c-violet); flex-shrink: 0; }
+.ms-title { font-size: 0.75rem; color: var(--text); }
+.ms-desc  { font-size: 0.58rem; color: var(--text-dim); margin-top: 2px; }
+.ms-badge {
+  font-family: var(--display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  transition: color .3s;
+}
+.ms-badge.done { color: var(--c-green); }
+
+/* ── JOG VIEW ── */
+.jog-note { font-size: 0.68rem; color: var(--text-dim); line-height: 1.7; margin-top: 6px; }
+.jog-note span { color: var(--c-green); }
+
+/* ── LOGS ── */
+.log-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.log-item:last-child { border-bottom: none; }
+.log-left { display: flex; align-items: center; gap: 10px; }
+.log-dot { width: 3px; height: 34px; border-radius: 2px; flex-shrink: 0; }
+.dot-fast { background: var(--c-violet); }
+.dot-jog  { background: var(--c-cyan); }
+.log-type { font-size: 0.75rem; color: var(--text); }
+.log-meta { font-size: 0.58rem; color: var(--text-dim); margin-top: 2px; }
+.log-reward-fast { font-family: var(--display); font-size: 0.8rem; font-weight: 700; color: var(--c-violet); }
+.log-reward-jog  { font-family: var(--display); font-size: 0.8rem; font-weight: 700; color: var(--c-green); }
+.empty-state { text-align: center; color: var(--text-dim); padding: 32px 0; font-size: 0.78rem; line-height: 2; }
+
+/* ── SHOP ── */
+.shop-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: border-color .2s;
+}
+.shop-card:not(.owned):hover { border-color: rgba(57,255,143,0.35); }
+.shop-icon { font-size: 2.2rem; flex-shrink: 0; width: 42px; text-align: center; }
+.shop-info { flex: 1; min-width: 0; }
+.shop-name { font-family: var(--display); font-size: 0.85rem; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.shop-price { font-size: 0.62rem; color: var(--c-amber); letter-spacing: 0.08em; margin-bottom: 3px; }
+.shop-desc  { font-size: 0.58rem; color: var(--text-dim); }
+.btn-buy {
+  background: rgba(57,255,143,0.08);
+  color: var(--c-green);
+  border: 1px solid rgba(57,255,143,0.3);
+  padding: 9px 14px;
+  border-radius: 6px;
+  font-family: var(--display);
+  font-size: 0.6rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .15s;
+  flex-shrink: 0;
+}
+.btn-buy:active { background: rgba(57,255,143,0.2); }
+.shop-card.owned { opacity: 0.4; filter: grayscale(.6); pointer-events: none; }
+.shop-card.owned .btn-buy { color: var(--text-dim); border-color: var(--border); cursor: default; }
+
+/* ── NAV ── */
+nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: var(--nav-h);
+  background: var(--surface);
+  border-top: 1px solid var(--border-hi);
+  display: flex;
+  z-index: 100;
+}
+nav::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--c-violet) 35%, var(--c-cyan) 65%, transparent);
+  opacity: 0.5;
+}
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: color .2s;
+  position: relative;
+  padding-bottom: 4px;
+}
+.nav-item.active { color: var(--c-cyan); }
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 20%; right: 20%;
+  height: 2px;
+  background: var(--c-cyan);
+  border-radius: 0 0 3px 3px;
+}
+.nav-icon  { font-size: 1.25rem; }
+.nav-label { font-family: var(--display); font-size: 0.5rem; letter-spacing: 0.1em; text-transform: uppercase; }
+
+/* ── JOG FULLSCREEN ── */
+#jog-screen {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  z-index: 200;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 24px;
+  gap: 0;
+}
+#jog-screen.visible { display: flex; }
+
+.jog-target-label {
+  font-family: var(--display);
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.jog-target-label span { color: var(--text); }
+
+.jog-bpm-number {
+  font-family: var(--display);
+  font-size: 6.5rem;
+  font-weight: 800;
+  line-height: 1;
+  margin: 0 0 4px;
+  transition: color .3s;
+  color: var(--c-cyan);
+}
+.jog-bpm-unit { font-size: 0.65rem; color: var(--text-dim); letter-spacing: 0.2em; margin-bottom: 16px; }
+
+/* progress ring */
+.ring-wrap {
+  position: relative;
+  width: 148px; height: 148px;
+  margin: 10px 0;
+  flex-shrink: 0;
+}
+.ring-bg {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  border: 3px solid rgba(124,111,255,0.1);
+}
+.ring-svg {
+  position: absolute; inset: 0;
+  transform: rotate(-90deg);
+}
+.ring-progress {
+  stroke-dasharray: 432;
+  stroke-dashoffset: 432;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear, stroke .3s;
+}
+.ring-inner {
+  position: absolute; inset: 16px;
+  border-radius: 50%;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.ring-time { font-family: var(--display); font-size: 1.35rem; font-weight: 700; color: var(--text); }
+.ring-sub  { font-size: 0.5rem; color: var(--text-dim); letter-spacing: 0.12em; }
+
+.jog-earned-row {
+  font-family: var(--display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--c-green);
+  margin: 14px 0 22px;
+  letter-spacing: 0.08em;
+}
+
+.jog-btns { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 10px; }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed;
+  bottom: calc(var(--nav-h) + 18px);
+  left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: var(--surface2);
+  border: 1px solid var(--c-violet);
+  color: var(--text);
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 800;
+  transition: all .22s ease;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* coin float */
+.coin-float {
+  position: fixed;
+  font-family: var(--display);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--c-green);
+  pointer-events: none;
+  z-index: 900;
+  animation: float-up 1.3s ease-out forwards;
+}
+@keyframes float-up { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-65px); } }
+
+/* dev zone */
+#dev-zone { position: absolute; top: 0; left: 0; width: 44px; height: 44px; opacity: 0; z-index: 9998; }
+</style>
+</head>
+<body>
+
+<div id="dev-zone" onclick="devHack()"></div>
+<div id="toast"></div>
+
+<!-- HEADER -->
+<header>
+  <div class="hud-stat">
+    <div class="hud-val v-violet" id="ui-level">LV.1</div>
+    <div class="hud-lbl">LEVEL</div>
+  </div>
+  <div class="header-mid">
+    <div id="ui-level-name">DORMANT</div>
+    <div style="font-size:0.48rem; margin-top:1px; opacity:0.45;">箱咩養成協定 v3</div>
+  </div>
+  <div class="hud-stat right">
+    <div class="hud-val v-amber" id="ui-coins">0 C</div>
+    <div class="hud-lbl">COINS</div>
+  </div>
+  <div class="exp-bar-wrap">
+    <div class="exp-bar-fill" id="exp-bar-fill" style="width:0%"></div>
+  </div>
+  <div class="h-glow"></div>
+</header>
+
+<!-- MAIN -->
+<main>
+
+  <!-- HOME -->
+  <section id="view-home" class="view active">
+    <div class="avatar-stage">
+      <div id="equip-aura" class="equip-layer">🌀</div>
+      <div class="orbit orbit-2"><div class="orbit-dot orbit-dot-2"></div></div>
+      <div class="orbit orbit-1"><div class="orbit-dot"></div></div>
+      <div class="avatar-core">
+        <div id="avatar-body" class="avatar-body">⬛</div>
+        <div id="equip-visor" class="equip-layer">🕶️</div>
+        <div id="equip-shoes" class="equip-layer">🛼</div>
+      </div>
+    </div>
+    <div class="status-tag">STATUS / <b id="home-status-text">DORMANT</b></div>
+    <div class="home-grid">
+      <div class="g-tile" style="--accent: var(--c-violet)">
+        <div class="tile-val v-violet" id="home-fast-hours">0.0h</div>
+        <div class="tile-lbl">斷食時數</div>
+      </div>
+      <div class="g-tile" style="--accent: var(--c-cyan)">
+        <div class="tile-val v-cyan" id="home-log-count">0</div>
+        <div class="tile-lbl">記錄次數</div>
+      </div>
+      <div class="g-tile" style="--accent: var(--c-green)">
+        <div class="tile-val v-green" id="home-coins">0</div>
+        <div class="tile-lbl">持有金幣</div>
+      </div>
+      <div class="g-tile" style="--accent: var(--c-amber)">
+        <div class="tile-val v-amber" id="home-equip-count">0/3</div>
+        <div class="tile-lbl">裝備已解</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FASTING -->
+  <section id="view-fast" class="view">
+    <div class="section-title">靜態自律 · FASTING</div>
+    <div class="card">
+      <div class="card-top-glow"></div>
+      <div class="fast-display">
+        <div class="fast-sub">ELAPSED TIME</div>
+        <div class="fast-timer-big" id="fast-timer">00:00:00</div>
+        <div class="fast-bar-wrap">
+          <div class="fast-bar-fill" id="fast-bar" style="width:0%"></div>
+        </div>
+        <div class="fast-hint" id="fast-hint">建議目標：連續 16 小時。<br>完成後自動寫入日誌並獲得 EXP。</div>
+      </div>
+      <button id="btn-fast" class="btn btn-violet" onclick="toggleFasting()">啟動斷食程序</button>
+    </div>
+
+    <div class="card">
+      <div class="card-top-glow"></div>
+      <div class="section-title" style="font-size:0.6rem; border-bottom:none; margin-bottom:10px; padding-bottom:0;">斷食里程碑</div>
+      <div id="milestone-list">
+        <div class="milestone-row">
+          <div class="ms-left"><div class="ms-bar"></div><div><div class="ms-title">Phase 1 · 4h</div><div class="ms-desc">糖原耗盡，代謝切換</div></div></div>
+          <div class="ms-badge" id="ms-4h">─</div>
+        </div>
+        <div class="milestone-row">
+          <div class="ms-left"><div class="ms-bar"></div><div><div class="ms-title">Phase 2 · 8h</div><div class="ms-desc">脂肪燃燒啟動</div></div></div>
+          <div class="ms-badge" id="ms-8h">─</div>
+        </div>
+        <div class="milestone-row">
+          <div class="ms-left"><div class="ms-bar"></div><div><div class="ms-title">Phase 3 · 12h</div><div class="ms-desc">酮體生成中</div></div></div>
+          <div class="ms-badge" id="ms-12h">─</div>
+        </div>
+        <div class="milestone-row">
+          <div class="ms-left"><div class="ms-bar"></div><div><div class="ms-title">Phase 4 · 16h</div><div class="ms-desc">細胞自噬啟動 · 完整循環</div></div></div>
+          <div class="ms-badge" id="ms-16h">─</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- JOGGING -->
+  <section id="view-jog" class="view">
+    <div class="section-title">動態產出 · JOGGING</div>
+    <div class="card">
+      <div class="card-top-glow"></div>
+      <div class="field">
+        <label>目標步頻 BPM（建議 160–190）</label>
+        <input type="number" id="set-bpm" value="175" min="100" max="220">
+      </div>
+      <div class="field">
+        <label>目標時長（分鐘）</label>
+        <input type="number" id="set-min" value="15" min="1" max="120">
+      </div>
+      <div class="jog-note">
+        保持在目標 ±10 BPM 範圍內，每 5 秒產生 <span>+1 C</span>。<br>
+        穿戴霓虹跑鞋後，感測靈敏度 +15%。
+      </div>
+      <button class="btn btn-cyan" onclick="startJogging()">執行運動協定</button>
+    </div>
+  </section>
+
+  <!-- LOGS -->
+  <section id="view-logs" class="view">
+    <div class="section-title">系統日誌 · LOGS</div>
+    <div class="card" style="padding: 10px 16px;" id="log-container"></div>
+  </section>
+
+  <!-- SHOP -->
+  <section id="view-shop" class="view">
+    <div class="section-title">黑市裝備 · MARKET</div>
+    <div class="shop-card" id="shop-visor">
+      <div class="shop-icon">🕶️</div>
+      <div class="shop-info">
+        <div class="shop-name">賽博護目鏡</div>
+        <div class="shop-price">50 C</div>
+        <div class="shop-desc">視覺強化 · 解鎖外觀裝備</div>
+      </div>
+      <button class="btn-buy" id="buy-visor" onclick="buyItem('visor',50)">購買</button>
+    </div>
+    <div class="shop-card" id="shop-shoes">
+      <div class="shop-icon">🛼</div>
+      <div class="shop-info">
+        <div class="shop-name">霓虹跑鞋</div>
+        <div class="shop-price">150 C</div>
+        <div class="shop-desc">步頻感測閾值降低 · 靈敏度 +15%</div>
+      </div>
+      <button class="btn-buy" id="buy-shoes" onclick="buyItem('shoes',150)">購買</button>
+    </div>
+    <div class="shop-card" id="shop-aura">
+      <div class="shop-icon">🌀</div>
+      <div class="shop-info">
+        <div class="shop-name">量子防護罩</div>
+        <div class="shop-price">300 C</div>
+        <div class="shop-desc">隔絕外部雜訊 · 解鎖光環效果</div>
+      </div>
+      <button class="btn-buy" id="buy-aura" onclick="buyItem('aura',300)">購買</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-item active" id="nav-home" onclick="switchNav('home')">
+    <div class="nav-icon">👁️</div>
+    <div class="nav-label">主頁</div>
+  </div>
+  <div class="nav-item" id="nav-fast" onclick="switchNav('fast')">
+    <div class="nav-icon">⏳</div>
+    <div class="nav-label">斷食</div>
+  </div>
+  <div class="nav-item" id="nav-jog" onclick="switchNav('jog')">
+    <div class="nav-icon">🏃</div>
+    <div class="nav-label">慢跑</div>
+  </div>
+  <div class="nav-item" id="nav-logs" onclick="switchNav('logs')">
+    <div class="nav-icon">📊</div>
+    <div class="nav-label">日誌</div>
+  </div>
+  <div class="nav-item" id="nav-shop" onclick="switchNav('shop')">
+    <div class="nav-icon">🛒</div>
+    <div class="nav-label">黑市</div>
+  </div>
+</nav>
+
+<!-- JOG FULLSCREEN -->
+<div id="jog-screen">
+  <div class="jog-target-label">TARGET / <span id="jog-target-display">175</span> BPM</div>
+  <div class="jog-bpm-number" id="jog-bpm-big">0</div>
+  <div class="jog-bpm-unit">BPM · CADENCE</div>
+
+  <div class="ring-wrap">
+    <div class="ring-bg"></div>
+    <svg class="ring-svg" viewBox="0 0 148 148">
+      <circle class="ring-progress" id="ring-path"
+        cx="74" cy="74" r="68"
+        fill="none"
+        stroke="var(--c-cyan)"
+        stroke-width="4"
+      />
+    </svg>
+    <div class="ring-inner">
+      <div class="ring-time" id="jog-ring-timer">00:00</div>
+      <div class="ring-sub">REMAIN</div>
+    </div>
+  </div>
+
+  <div class="jog-earned-row">EARNED · <span id="jog-coins-display">0 C</span></div>
+
+  <div class="jog-btns">
+    <button class="btn btn-danger" onclick="stopJogging()">強制終止並結算</button>
+    <button class="btn btn-mock" onclick="mockStep()">[PC 模擬敲擊 · MOCK STEP]</button>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────
+//  STORAGE KEY
+// ─────────────────────────────────────────
+const KEY = 'xiangMieV4';
+
+const DEFAULTS = {
+  coins: 0,
+  totalFastedHours: 0,
+  isFasting: false,
+  fastingStart: null,   // stored as Number (ms timestamp)
+  inventory: { visor: false, shoes: false, aura: false },
+  logs: []
+};
+
+let S = JSON.parse(JSON.stringify(DEFAULTS));
+
+// ── BUG FIX 1: careful merge, fastingStart as Number ──
+try {
+  const raw = localStorage.getItem(KEY);
+  if (raw) {
+    const p = JSON.parse(raw);
+    S.coins             = typeof p.coins === 'number'            ? p.coins             : 0;
+    S.totalFastedHours  = typeof p.totalFastedHours === 'number' ? p.totalFastedHours  : 0;
+    S.isFasting         = Boolean(p.isFasting);
+    // BUG FIX: always store/restore as Number, not string
+    S.fastingStart      = p.fastingStart != null ? Number(p.fastingStart) : null;
+    S.inventory         = Object.assign({ visor:false, shoes:false, aura:false }, p.inventory || {});
+    S.logs              = Array.isArray(p.logs) ? p.logs.slice(0, 50) : [];
+  }
+} catch(e) { console.warn('Load error', e); }
+
+function persist() {
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {}
+}
+
+// ─────────────────────────────────────────
+//  LEVEL SYSTEM
+// ─────────────────────────────────────────
+const LEVELS = [
+  { lv:1, name:'DORMANT',   minH:0,   avatar:'⬛' },
+  { lv:2, name:'AWAKENING', minH:4,   avatar:'📦' },
+  { lv:3, name:'ACTIVE',    minH:8,   avatar:'📦' },
+  { lv:4, name:'ELEVATED',  minH:16,  avatar:'✨📦✨' },
+  { lv:5, name:'ASCENDANT', minH:32,  avatar:'🌟📦🌟' },
+  { lv:6, name:'TRANSCEND', minH:64,  avatar:'💎📦💎' },
+  { lv:7, name:'SOVEREIGN', minH:128, avatar:'👑📦👑' },
+];
+
+function getLevelData() {
+  let cur = LEVELS[0];
+  for (const l of LEVELS) { if (S.totalFastedHours >= l.minH) cur = l; }
+  const idx = LEVELS.indexOf(cur);
+  const nxt = LEVELS[idx + 1] || null;
+  const pct = nxt
+    ? ((S.totalFastedHours - cur.minH) / (nxt.minH - cur.minH)) * 100
+    : 100;
+  return { cur, nxt, pct: Math.min(100, Math.max(0, pct)) };
+}
+
+// ─────────────────────────────────────────
+//  RENDER
+// ─────────────────────────────────────────
+function renderAll() {
+  const { cur, pct } = getLevelData();
+
+  document.getElementById('ui-level').textContent     = `LV.${cur.lv}`;
+  document.getElementById('ui-level-name').textContent = cur.name;
+  document.getElementById('ui-coins').textContent      = S.coins + ' C';
+  document.getElementById('exp-bar-fill').style.width  = pct + '%';
+
+  document.getElementById('avatar-body').textContent = cur.avatar;
+  setEquip('equip-visor', S.inventory.visor);
+  setEquip('equip-shoes', S.inventory.shoes);
+  setEquip('equip-aura',  S.inventory.aura);
+
+  document.getElementById('home-fast-hours').textContent = S.totalFastedHours.toFixed(1) + 'h';
+  document.getElementById('home-log-count').textContent  = S.logs.length;
+  document.getElementById('home-coins').textContent      = S.coins;
+  document.getElementById('home-status-text').textContent = cur.name;
+  const equipCount = Object.values(S.inventory).filter(Boolean).length;
+  document.getElementById('home-equip-count').textContent = equipCount + '/3';
+
+  renderLogs();
+  renderShop();
+}
+
+function setEquip(id, visible) {
+  document.getElementById(id).style.display = visible ? 'block' : 'none';
+}
+
+function renderLogs() {
+  const c = document.getElementById('log-container');
+  if (!S.logs.length) {
+    c.innerHTML = '<div class="empty-state">// 暫無記錄<br>開始你的第一次訓練 //</div>';
+    return;
+  }
+  c.innerHTML = S.logs.slice(0, 50).map(l => {
+    const isFast = l.type === 'Fasting';
+    return `<div class="log-item">
+      <div class="log-left">
+        <div class="log-dot ${isFast ? 'dot-fast' : 'dot-jog'}"></div>
+        <div>
+          <div class="log-type">${isFast ? '靜態斷食' : '動態超慢跑'}</div>
+          <div class="log-meta">${l.date} · ${l.durationStr}</div>
+        </div>
+      </div>
+      <div class="${isFast ? 'log-reward-fast' : 'log-reward-jog'}">${l.reward}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── BUG FIX 3: shop owned state uses pointer-events:none on card (CSS), no onclick conflict ──
+function renderShop() {
+  ['visor','shoes','aura'].forEach(k => {
+    const card = document.getElementById('shop-' + k);
+    const btn  = document.getElementById('buy-' + k);
+    if (S.inventory[k]) {
+      card.classList.add('owned');
+      btn.textContent = '已裝備';
+      btn.disabled = true;
+    } else {
+      card.classList.remove('owned');
+      btn.textContent = '購買';
+      btn.disabled = false;
+    }
+  });
+}
+
+// ─────────────────────────────────────────
+//  NAV
+// ─────────────────────────────────────────
+function switchNav(id) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('nav-' + id).classList.add('active');
+  document.getElementById('view-' + id).classList.add('active');
+  document.querySelector('main').scrollTo(0, 0);
+}
+
+// ─────────────────────────────────────────
+//  TOAST & FLOAT
+// ─────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+function coinFloat(x, y, amount) {
+  const el = document.createElement('div');
+  el.className = 'coin-float';
+  el.textContent = `+${amount} C`;
+  el.style.left = x + 'px';
+  el.style.top  = y + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1400);
+}
+
+// ─────────────────────────────────────────
+//  FASTING
+// ─────────────────────────────────────────
+let fastInterval = null;
+
+function addLog(type, durationStr, reward) {
+  const d = new Date();
+  const date = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  S.logs.unshift({ type, date, durationStr, reward });
+  if (S.logs.length > 50) S.logs.pop();
+}
+
+function toggleFasting() {
+  const btn = document.getElementById('btn-fast');
+  if (S.isFasting) {
+    // ── STOP ──
+    // BUG FIX: fastingStart is guaranteed Number now
+    const diffSec = Math.floor((Date.now() - S.fastingStart) / 1000);
+    const hours   = diffSec / 3600;
+
+    clearInterval(fastInterval);
+    fastInterval = null;
+    S.isFasting    = false;
+    S.fastingStart = null;
+
+    if (diffSec >= 60) {
+      S.totalFastedHours += hours;
+      const hStr = hours >= 1 ? hours.toFixed(1) + 'h' : Math.floor(diffSec/60) + 'm';
+      addLog('Fasting', hStr, '+ EXP');
+      showToast(`斷食結束 · 歷時 ${hStr} · EXP 已寫入`);
+    } else {
+      showToast('時間太短，未記錄。');
+    }
+
+    persist();
+    renderAll();
+    updateFastUI();
+
+  } else {
+    // ── START ──
+    S.isFasting    = true;
+    S.fastingStart = Date.now();  // stored as Number
+    persist();
+    fastInterval = setInterval(updateFastUI, 1000);
+    updateFastUI();
+    showToast('斷食程序已啟動 · 保持！');
+    btn.textContent = '終止並寫入日誌';
+    btn.classList.add('btn-active');
+  }
+}
+
+function updateFastUI() {
+  const btn   = document.getElementById('btn-fast');
+  const timer = document.getElementById('fast-timer');
+  const bar   = document.getElementById('fast-bar');
+  const hint  = document.getElementById('fast-hint');
+
+  if (!S.isFasting) {
+    timer.textContent = '00:00:00';
+    bar.style.width   = '0%';
+    hint.textContent  = '建議目標：連續 16 小時。完成後自動寫入日誌並獲得 EXP。';
+    btn.textContent   = '啟動斷食程序';
+    btn.classList.remove('btn-active');
+    ['4h','8h','12h','16h'].forEach(id => {
+      const el = document.getElementById('ms-' + id);
+      el.textContent = '─';
+      el.classList.remove('done');
+    });
+    return;
+  }
+
+  // BUG FIX: S.fastingStart is Number, safe arithmetic
+  const diffSec = Math.floor((Date.now() - S.fastingStart) / 1000);
+  const h = Math.floor(diffSec / 3600);
+  const m = Math.floor((diffSec % 3600) / 60);
+  const s = diffSec % 60;
+  timer.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+  bar.style.width = Math.min(100, (diffSec / (16*3600)) * 100) + '%';
+  const hrs = diffSec / 3600;
+  hint.textContent = hrs >= 16
+    ? '✅ 16 小時目標已達成！繼續保持或終止結算。'
+    : `進行中 · 距 16h 目標還需 ${(16 - hrs).toFixed(1)} 小時`;
+
+  // milestones with visual update
+  const MILESTONES = { '4h': 4, '8h': 8, '12h': 12, '16h': 16 };
+  for (const [id, th] of Object.entries(MILESTONES)) {
+    const el = document.getElementById('ms-' + id);
+    const reached = hrs >= th;
+    el.textContent = reached ? '✅' : '─';
+    el.classList.toggle('done', reached);
+  }
+}
+
+// restore on load
+if (S.isFasting && S.fastingStart) {
+  fastInterval = setInterval(updateFastUI, 1000);
+  updateFastUI();
+  const btn = document.getElementById('btn-fast');
+  btn.textContent = '終止並寫入日誌';
+  btn.classList.add('btn-active');
+}
+
+// ─────────────────────────────────────────
+//  JOGGING
+// ─────────────────────────────────────────
+let jog = {
+  active: false,
+  startTs: 0,
+  targetSec: 0,
+  targetBPM: 175,
+  goodSec: 0,
+  coins: 0,
+};
+let jogTickId   = null;
+let stepTimes   = [];
+let currentBPM  = 0;
+let isPeak      = false;
+
+const elJogScreen    = document.getElementById('jog-screen');
+const elJogBpmBig    = document.getElementById('jog-bpm-big');
+const elJogRingTimer = document.getElementById('jog-ring-timer');
+const elJogCoins     = document.getElementById('jog-coins-display');
+const elRingPath     = document.getElementById('ring-path');
+const RING_C         = 2 * Math.PI * 68; // ≈ 427.3
+
+async function startJogging() {
+  jog.targetBPM = parseInt(document.getElementById('set-bpm').value)  || 175;
+  jog.targetSec = (parseInt(document.getElementById('set-min').value) || 15) * 60;
+
+  try {
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+      const perm = await DeviceMotionEvent.requestPermission();
+      if (perm === 'granted') window.addEventListener('devicemotion', handleMotion);
+    } else {
+      window.addEventListener('devicemotion', handleMotion);
+    }
+  } catch(e) {}
+
+  document.getElementById('jog-target-display').textContent = jog.targetBPM;
+
+  jog.active   = true;
+  jog.startTs  = Date.now();
+  jog.goodSec  = 0;
+  jog.coins    = 0;
+  stepTimes    = [];
+  currentBPM   = 0;
+  isPeak       = false;
+
+  elRingPath.style.strokeDashoffset = RING_C;
+  elRingPath.style.stroke = 'var(--c-cyan)';
+  elJogCoins.textContent  = '0 C';
+  elJogBpmBig.textContent = '0';
+  elJogBpmBig.style.color = 'var(--c-cyan)';
+
+  elJogScreen.classList.add('visible');
+  jogTickId = setInterval(jogTick, 1000);
+}
+
+function stopJogging() {
+  jog.active = false;
+  clearInterval(jogTickId);
+  jogTickId = null;
+  window.removeEventListener('devicemotion', handleMotion);
+
+  const elapsedSec = Math.floor((Date.now() - jog.startTs) / 1000);
+  elJogScreen.classList.remove('visible');
+
+  if (elapsedSec < 10) {
+    showToast('時間太短，未記錄。');
+    return;
+  }
+
+  const mStr = Math.floor(elapsedSec/60) + 'm ' + (elapsedSec%60) + 's';
+
+  // BUG FIX 2: correct order — coins > 0 check is primary, not secondary
+  if (jog.coins > 0) {
+    S.coins += jog.coins;
+    addLog('Jogging', mStr, `+${jog.coins} C`);
+    persist();
+    renderAll();
+    showToast(`訓練結束 · +${jog.coins} C 已入帳`);
+  } else {
+    addLog('Jogging', mStr, '+0 C');
+    persist();
+    renderAll();
+    showToast('訓練結束 · 步頻未達標，下次加油！');
+  }
+}
+
+function jogTick() {
+  if (!jog.active) return;
+
+  const elapsed = Math.floor((Date.now() - jog.startTs) / 1000);
+  const remain  = Math.max(0, jog.targetSec - elapsed);
+
+  // ring
+  const offset = RING_C * (1 - Math.min(1, elapsed / jog.targetSec));
+  elRingPath.style.strokeDashoffset = offset;
+
+  // countdown
+  const rm = Math.floor(remain / 60).toString().padStart(2,'0');
+  const rs = (remain % 60).toString().padStart(2,'0');
+  elJogRingTimer.textContent = `${rm}:${rs}`;
+
+  // BUG FIX 4: BPM decay if no step for >2s
+  if (stepTimes.length > 0 && Date.now() - stepTimes[stepTimes.length - 1] > 2000) {
+    currentBPM = 0;
+  }
+
+  elJogBpmBig.textContent = currentBPM;
+  const onTarget = currentBPM > 0 && Math.abs(currentBPM - jog.targetBPM) <= 10;
+  elJogBpmBig.style.color = onTarget ? 'var(--c-green)' : 'var(--c-cyan)';
+  elRingPath.style.stroke  = onTarget ? 'var(--c-green)' : 'var(--c-cyan)';
+
+  if (onTarget) {
+    jog.goodSec++;
+    if (jog.goodSec % 5 === 0) {
+      jog.coins++;
+      elJogCoins.textContent = jog.coins + ' C';
+      coinFloat(window.innerWidth / 2 - 20, window.innerHeight / 2 - 40, 1);
+    }
+  }
+
+  if (remain <= 0) stopJogging();
+}
+
+function triggerStep() {
+  if (!jog.active) return;
+
+  const body = document.getElementById('avatar-body');
+  body.classList.remove('avatar-bounce');
+  void body.offsetWidth;
+  body.classList.add('avatar-bounce');
+  setTimeout(() => body.classList.remove('avatar-bounce'), 220);
+
+  const now = Date.now();
+  stepTimes.push(now);
+  if (stepTimes.length > 6) stepTimes.shift();
+
+  if (stepTimes.length >= 2) {
+    const span = stepTimes[stepTimes.length - 1] - stepTimes[0];
+    const avg  = span / (stepTimes.length - 1);
+    const raw  = Math.round(60000 / avg);
+    // BUG FIX 4: reject implausible BPM values (negative or >300)
+    currentBPM = (raw > 0 && raw <= 300) ? raw : currentBPM;
+  }
+}
+
+function mockStep() { triggerStep(); }
+
+function handleMotion(evt) {
+  const acc = evt.accelerationIncludingGravity;
+  if (!acc) return;
+  const mag       = Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
+  const threshold = S.inventory.shoes ? 10.5 : 12.0;
+
+  if (mag > threshold && !isPeak) {
+    isPeak = true;
+    const last = stepTimes[stepTimes.length - 1];
+    if (!last || Date.now() - last > 200) {
+      triggerStep();
+    }
+  } else if (mag < threshold - 1.5) {
+    isPeak = false;
+  }
+}
+
+// ─────────────────────────────────────────
+//  SHOP
+// ─────────────────────────────────────────
+function buyItem(key, price) {
+  if (S.inventory[key]) return;
+  if (S.coins < price) {
+    showToast(`金幣不足 · 還需 ${price - S.coins} C`);
+    return;
+  }
+  S.coins -= price;
+  S.inventory[key] = true;
+  persist();
+  renderAll();
+  showToast(`已購入 · ${key.toUpperCase()} 已裝備到箱咩身上！`);
+}
+
+// ─────────────────────────────────────────
+//  DEV HACK
+// ─────────────────────────────────────────
+let devTaps = 0, devTimer;
+function devHack() {
+  devTaps++;
+  clearTimeout(devTimer);
+  devTimer = setTimeout(() => { devTaps = 0; }, 1500);
+  if (devTaps >= 5) {
+    devTaps = 0;
+    S.coins            += 200;
+    S.totalFastedHours += 8;
+    persist();
+    renderAll();
+    showToast('[後門] 注入 200C + 8h EXP');
+  }
+}
+
+// ─────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────
+renderAll();
+</script>
+</body>
+</html>

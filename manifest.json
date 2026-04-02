@@ -1,0 +1,14 @@
+{
+  "name": "箱咩養成協定",
+  "short_name": "箱咩OS",
+  "display": "standalone",
+  "background_color": "#050508",
+  "theme_color": "#00e5ff",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "880x1197",
+      "type": "image/png"
+    }
+  ]
+}
